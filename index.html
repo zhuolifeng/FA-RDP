@@ -407,7 +407,13 @@
 
     <!-- Main results -->
     <h3 class="subsection-heading">Q1 · Comparison with Baselines</h3>
-    <p style="color:#444;max-width:820px;margin-bottom:1rem;">Across all three tasks, FA-RDP succeeds most often. The videos below show one run per baseline per task.</p>
+    <p style="color:#444;max-width:820px;margin-bottom:1rem;">
+      We compare FA-RDP against four baselines on all three tasks (20 trials each). FA-RDP wins on every task and reaches
+      81.7% average success, about 30 points above the strongest baseline, ImplicitRDP (51.7%). Plain diffusion (DP) reacts
+      too slowly to force and fails almost entirely on Box Flipping; the regression policy is fast but loses pre-contact
+      diversity, so it drifts to the wrong contact point. FA-RDP is the only method that both approaches correctly and reacts
+      fast enough to stay in contact through the task.
+    </p>
     <div class="table-wrap">
       <table class="results-table">
         <thead>
@@ -478,8 +484,12 @@
             <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/box_implicitrdp_failure.mp4" type="video/mp4"></video>
             <div class="video-label">ImplicitRDP ✗</div>
           </div></div>
+          <div class="column is-3"><div class="video-card">
+            <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/box_meanflows_failure.mp4" type="video/mp4"></video>
+            <div class="video-label">Regression Policy w/ Force ✗</div>
+          </div></div>
         </div>
-        <p class="fig-caption" style="max-width:820px;margin:0.4rem auto 0;">FA-RDP keeps contact and flips the box; the baselines lose contact or push the wrong region.</p>
+        <p class="fig-caption" style="max-width:820px;margin:0.4rem auto 0;">FA-RDP keeps contact and flips the box. DP and ImplicitRDP lose contact during the flip, RDP contacts the wrong box region, and the regression policy knocks down a front block.</p>
       </div>
 
       <!-- SWITCH -->
@@ -501,8 +511,12 @@
             <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/switch_implicitrdp_failure.mp4" type="video/mp4"></video>
             <div class="video-label">ImplicitRDP ✗</div>
           </div></div>
+          <div class="column is-3"><div class="video-card">
+            <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/switch_meanflows_failure.mp4" type="video/mp4"></video>
+            <div class="video-label">Regression Policy w/ Force ✗</div>
+          </div></div>
         </div>
-        <p class="fig-caption" style="max-width:820px;margin:0.4rem auto 0;">FA-RDP keeps contact and toggles the switch; the baselines lose contact or hit the wrong region.</p>
+        <p class="fig-caption" style="max-width:820px;margin:0.4rem auto 0;">FA-RDP keeps contact and toggles the switch. DP and ImplicitRDP lose contact during the toggle, RDP hits the wrong switch region, and the regression policy knocks down a front block.</p>
       </div>
 
       <!-- BUTTON -->
@@ -524,14 +538,24 @@
             <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/button_implicitrdp_failure.mp4" type="video/mp4"></video>
             <div class="video-label">ImplicitRDP ✗</div>
           </div></div>
+          <div class="column is-3"><div class="video-card">
+            <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/button_meanflows_failure.mp4" type="video/mp4"></video>
+            <div class="video-label">Regression Policy w/ Force ✗</div>
+          </div></div>
         </div>
-        <p class="fig-caption" style="max-width:820px;margin:0.4rem auto 0;">FA-RDP keeps contact and presses the button; the baselines lose contact or hit the wrong region.</p>
+        <p class="fig-caption" style="max-width:820px;margin:0.4rem auto 0;">FA-RDP keeps contact and presses the button. DP and ImplicitRDP lose contact during the press, RDP hits the wrong button region, and the regression policy knocks down a front block.</p>
       </div>
     </div>
 
     <!-- Multimodality preservation -->
     <div style="margin-top:3rem;">
       <h3 class="subsection-heading">Q2 · Pre-Contact Multimodality Preservation</h3>
+      <p style="color:#444;max-width:820px;margin-bottom:1.5rem;">
+        Does frequency adaptation actually keep the pre-contact modes? On Box Flipping there are four valid ways to approach
+        the box. Over repeated rollouts, FA-RDP uses all four, matching the full multi-step policy, while running one-step
+        high-frequency sampling everywhere collapses to a single dominant mode. This confirms that switching to low-frequency
+        sampling before contact is what preserves diverse behavior — speed alone would throw it away.
+      </p>
       <div class="columns is-centered" style="margin-bottom:1.5rem;">
         <div class="column is-8">
           <img src="figs/multimodal_preservation/pillows-1.png" style="width:100%;border-radius:8px;" alt="Multimodal Preservation">
@@ -571,6 +595,13 @@
 <section class="paper-section" id="curves">
   <div class="container">
     <h2 class="section-heading">Q3 · Indicator Accuracy &amp; Force Curves</h2>
+    <p style="color:#444;max-width:820px;margin-bottom:1.5rem;">
+      Does the indicator switch frequency at the right moment? We plot the indicator value against the measured contact force
+      over an episode. The indicator stays low while the arm is still approaching and rises sharply the moment contact force
+      appears — so the policy runs low-frequency sampling exactly during the free-approach phase and one-step high-frequency
+      sampling exactly during contact. Using this learned switch instead of always running high frequency raises average
+      success from 61.7% to 81.7%.
+    </p>
     <div class="columns is-centered">
       <div class="column is-8">
         <img src="figs/confidence_force_curve/confidence_force_curve-1.png" style="width:100%;border-radius:8px;" alt="Confidence and Force Curves">
@@ -591,8 +622,12 @@
     <h2 class="section-heading">Q4 · Distillation Method Comparison</h2>
     <p style="color:#444;max-width:820px;margin-bottom:1.5rem;">
       Does MCD give better one-step high-frequency prediction than other distillation objectives? All methods run in
-      high-frequency mode with frequency selection off. The high-frequency-alone policy is the multi-step policy run
-      one-step with no distillation; the others apply different one-step distillation objectives.
+      high-frequency mode with frequency selection off, so this isolates the distillation choice. The high-frequency-alone
+      policy is the multi-step policy simply run one-step with no distillation; the others apply different one-step distillation
+      objectives. Standard distillation targets fail badly here: MeanFlow and Consistency almost never succeed (1.7%) because
+      they must predict noise-like quantities that are unstable for robot actions, and naive one-step sampling reaches only
+      20.0%. MCD predicts on the action manifold instead and reaches 61.7% — more than 3× the next best — showing that where
+      the target lives matters more than the distillation loss itself.
     </p>
     <div class="table-wrap">
       <table class="results-table">
