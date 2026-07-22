@@ -313,7 +313,7 @@
     </div>
     <img src="figs/teaser/teaser-1.png" style="max-width:860px;margin:0 auto;display:block;border-radius:8px;" alt="Teaser">
     <p class="fig-caption" style="max-width:820px;margin:0.7rem auto 0;">
-      Multimodality-guided frequency adaptation across manipulation phases. Before contact, low indicator value reflects multiple possible approach trajectories and selects the low-frequency diffusion sampler. After contact, the indicator value rises as physical constraints reduce action ambiguity, selecting the high-frequency distilled sampler for rapid force-feedback response.
+      Before contact: low indicator &rarr; low-frequency sampling keeps multiple approach modes. After contact: high indicator &rarr; fast one-step high-frequency sampling for force response.
     </p>
   </div>
 </section>
@@ -326,20 +326,17 @@
   <div class="container">
     <h2 class="section-heading">Abstract</h2>
     <div class="abstract-box">
-      In contact-rich manipulation, action multimodality and reactivity dominate different stages of a single episode.
-      Before contact, multiple trajectories might be equally valid, making it important to preserve diverse action modes.
-      After contact, geometric constraints and force limits narrow the solution space, while successful execution demands
-      rapid responses to force feedback. However, standard diffusion policies use a fixed inference frequency and sampling
-      steps throughout the episode, forcing a fundamental compromise: low-frequency, multi-step sampling better preserves
-      pre-contact multimodality but responds slowly to force feedback, whereas high-frequency sampling improves reactivity
-      but tends to collapse distinct pre-contact modes. To resolve this tradeoff, we present <strong>FA-RDP</strong>, a
-      <em>frequency-adaptive reactive diffusion policy</em>. A shared multi-frequency visual-force Transformer predicts
-      action chunks at both low and high frequencies, while a learned multimodality indicator dynamically selects
-      multi-step low-frequency sampling before contact and one-step high-frequency sampling as action ambiguity decreases.
-      We further introduce <strong>Manifold Consistency Distillation (MCD)</strong>, which reparameterizes the diffusion
-      network to predict actions on the robot action manifold while retaining DDPM-based residual supervision.
-      Experiments on three contact-rich manipulation tasks show that FA-RDP achieves the highest success rate while
-      preserving diverse pre-contact trajectory modes. Code will be made publicly available.
+      Contact-rich manipulation needs two conflicting things within one episode. Before contact, many trajectories are
+      equally valid, so the policy should keep diverse action modes. After contact, force and geometry narrow the options,
+      and success depends on reacting quickly to force feedback. Standard diffusion policies run at one fixed inference
+      frequency, forcing a compromise: low-frequency sampling preserves pre-contact modes but reacts slowly, while
+      high-frequency sampling reacts fast but collapses those modes.
+      We present <strong>FA-RDP</strong>, a <em>frequency-adaptive reactive diffusion policy</em>. A shared multi-frequency
+      visual-force Transformer predicts action chunks at both low and high frequencies, and a learned multimodality
+      indicator switches between multi-step low-frequency sampling before contact and one-step high-frequency sampling
+      after contact. We further introduce <strong>Manifold Consistency Distillation (MCD)</strong> for stable one-step
+      prediction. On three contact-rich tasks, FA-RDP reaches the highest success rate while keeping diverse pre-contact
+      modes. Code will be made publicly available.
     </div>
   </div>
 </section>
@@ -352,7 +349,7 @@
   <div class="container">
     <h2 class="section-heading">Method</h2>
     <p style="color:#444;margin-bottom:2rem;">
-      FA-RDP consists of three tightly integrated components that together resolve the multimodality–reactivity tradeoff inherent to contact-rich manipulation.
+      FA-RDP has three parts that together resolve the multimodality–reactivity tradeoff.
     </p>
 
     <!-- Component 1 -->
@@ -361,12 +358,10 @@
       <div class="columns is-vcentered">
         <div class="column is-6">
           <img src="figs/multi_freq_transformer/method-1.png" style="width:100%;border-radius:8px;" alt="Multi-Frequency Transformer">
-          <p class="fig-caption">Multi-frequency visual-force Transformer. Dense positions for high-frequency chunks; sparse positions for low-frequency chunks — on a shared temporal grid.</p>
+          <p class="fig-caption">Dense positions for high-frequency chunks, sparse positions for low-frequency chunks, on one shared temporal grid.</p>
         </div>
         <div class="column is-6 content">
-          <p>A single shared backbone handles <strong>both</strong> frequency modes through <em>frequency-adaptive positional encoding</em>: the frequency mode selects temporal indices on a shared grid rather than appending an extra token — high-frequency mode uses dense consecutive positions, low-frequency mode uses sparse positions.</p>
-          <p>The backbone is trained jointly with a multi-frequency diffusion objective $\mathcal{L}_\text{MF} = \mathcal{L}_\epsilon^\ell + \mathcal{L}_\epsilon^h$, where the network predicts action chunks on the robot manifold and epsilon supervision is recovered via a fixed reparameterization.</p>
-          <p>A causal action-force mask prevents future contact leakage while preserving efficient parallel training.</p>
+          <p>One shared backbone serves both frequencies. Frequency-adaptive positional encoding picks dense temporal positions for high-frequency chunks and sparse positions for low-frequency chunks — no extra tokens. A causal action-force mask blocks future-contact leakage.</p>
         </div>
       </div>
     </div>
@@ -375,9 +370,7 @@
     <div class="box" style="margin-bottom:2rem;">
       <h3 class="subsection-heading">2 · Multimodality-Based Frequency Selection</h3>
       <div class="content">
-        <p>A lightweight Transformer <strong>multimodality indicator</strong> head maps slow visual tokens to a scalar confidence $\sigma(\mathbf{o}_n)$. During Stage 2, we freeze the backbone and calibrate the indicator by sampling the low-frequency policy $N=8$ times per observation and computing an empirical action residual:</p>
-        <p style="text-align:center;">$e(\mathbf{o}_n) = \frac{1}{N}\sum_{m=1}^{N}\|\hat{\mathbf{A}}^\ell_m - \mathbf{A}^\ell\|_2^2$</p>
-        <p>At inference, if $\sigma > \tau$ (contact phase, low ambiguity) FA-RDP selects the one-step <strong>high-frequency distilled sampler</strong>; otherwise it uses multi-step <strong>low-frequency DDIM</strong> to preserve diverse pre-contact modes.</p>
+        <p>A lightweight indicator head reads the visual tokens and outputs a scalar confidence. When confidence is low (pre-contact, many modes), FA-RDP samples multi-step at low frequency; when it is high (post-contact), it switches to one-step high-frequency sampling.</p>
       </div>
     </div>
 
@@ -387,13 +380,10 @@
       <div class="columns is-vcentered">
         <div class="column is-6">
           <img src="figs/mcd_distillation/mcd-1.png" style="width:100%;border-radius:8px;" alt="MCD Distillation">
-          <p class="fig-caption">MCD maps noisy states to action manifold predictions. Stop-gradient target alignment + sample regression loss (SRL) stabilize one-step inference.</p>
+          <p class="fig-caption">MCD predicts actions on the robot action manifold for stable one-step inference.</p>
         </div>
         <div class="column is-6 content">
-          <p>Directly distilling epsilon, score, or velocity targets is unstable for robot action prediction. MCD instead reparameterizes the student to <strong>predict action chunks on the robot action manifold</strong>, converting noise-like targets into smooth, kinematically valid outputs.</p>
-          <p>The Stage 3 distillation objective combines a consistency alignment term with a sample regression loss (SRL):</p>
-          <p style="text-align:center;">$\mathcal{L}_\text{distill} = \lambda_\text{MCD}\|\hat{\mathbf{A}}_\theta^h - \text{sg}[\hat{\mathbf{A}}_{\bar\theta}^h]\|^2 + \lambda_\text{SRL}\|\hat{\mathbf{A}}_\theta^h - \mathbf{A}^h\|^2$</p>
-          <p>The fixed DDPM conversion retains residual supervision without forcing the network to predict noise-like quantities, significantly reducing learning difficulty.</p>
+          <p>Distilling noise-like targets is unstable for robot actions. MCD instead has the student predict action chunks directly on the robot action manifold, keeping DDPM residual supervision while producing smooth, valid outputs — which makes reliable one-step inference possible.</p>
         </div>
       </div>
     </div>
@@ -412,11 +402,12 @@
     <h3 class="subsection-heading">Experimental Setup</h3>
     <div style="max-width:680px;margin:0 auto 2rem;">
       <img src="figs/experimental_setup/setup-1.png" style="width:100%;border-radius:8px;" alt="Experimental Setup">
-      <p class="fig-caption">Flexiv Rizon 4s follower arm with wrist-mounted iPhone fisheye camera and third-view USB camera. Three contact-rich tasks designed to test both multimodality and reactivity.</p>
+      <p class="fig-caption">Flexiv Rizon 4s arm with wrist and third-view cameras. Three contact-rich tasks: box flipping, switch toggling, button pressing.</p>
     </div>
 
     <!-- Main results -->
-    <h3 class="subsection-heading">Main Results — Q1: Comparison with Baselines</h3>
+    <h3 class="subsection-heading">Q1 · Comparison with Baselines</h3>
+    <p style="color:#444;max-width:820px;margin-bottom:1rem;">Across all three tasks, FA-RDP succeeds most often. The videos below show one run per baseline per task.</p>
     <div class="table-wrap">
       <table class="results-table">
         <thead>
@@ -452,148 +443,89 @@
         </tbody>
       </table>
     </div>
-    <p class="table-note" style="margin-bottom:2rem;">FA-RDP achieves 81.7% average success rate — 30 percentage points above the strongest baseline (ImplicitRDP).</p>
+    <p class="table-note" style="margin-bottom:2rem;">FA-RDP reaches 81.7% average success — about 30 points above the best baseline (ImplicitRDP).</p>
 
-    <!-- Failure case figures -->
-    <h3 class="subsection-heading">Failure Case Analysis</h3>
-    <div style="margin-bottom:1.5rem;">
-      <img src="figs/dual_box_failure_cases/dual_box_failure_cases-1.png" style="width:100%;border-radius:8px;" alt="Box Flipping Failure Cases">
-      <p class="fig-caption">Dual Box Flipping failure cases. DP and ImplicitRDP lose contact during the flip; RDP contacts the wrong box region; Regression Policy w/ Force knocks down a front block. FA-RDP keeps contact and completes the task.</p>
-    </div>
-    <div style="margin-bottom:1.5rem;">
-      <img src="figs/dual_switch_failure_cases/dual_switch_failure_cases-1.png" style="width:100%;border-radius:8px;" alt="Switch Toggling Failure Cases">
-      <p class="fig-caption">Dual Switch Toggling failure cases. DP and ImplicitRDP lose contact during the toggle; RDP contacts the wrong switch region; Regression Policy w/ Force knocks down a front block. FA-RDP keeps contact and completes the toggle.</p>
-    </div>
-    <div style="margin-bottom:2.5rem;">
-      <img src="figs/dual_button_failure_cases/dual_button_failure_cases-1.png" style="width:100%;border-radius:8px;" alt="Button Pressing Failure Cases">
-      <p class="fig-caption">Dual Button Pressing failure cases. DP and ImplicitRDP lose contact during the press; RDP contacts the wrong button region; Regression Policy w/ Force knocks down a front block. FA-RDP keeps contact and completes the press.</p>
-    </div>
-
-    <!-- Per-task videos -->
-    <h3 class="subsection-heading">Per-Task Video Comparisons</h3>
-    <div class="tab-buttons" id="task-tabs">
-      <button class="button is-active" data-tab="box">
-        <span class="icon"><i class="fas fa-box"></i></span><span>Box Flipping</span>
-      </button>
-      <button class="button" data-tab="switch">
-        <span class="icon"><i class="fas fa-toggle-on"></i></span><span>Switch Toggling</span>
-      </button>
-      <button class="button" data-tab="button">
-        <span class="icon"><i class="fas fa-dot-circle"></i></span><span>Button Pressing</span>
-      </button>
-    </div>
-
-    <!-- BOX -->
-    <div class="tab-pane is-active" id="tab-box">
-      <div class="columns is-multiline">
-        <div class="column is-3"><div class="video-card">
-          <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/box_ours_success.mp4" type="video/mp4"></video>
-          <div class="video-label ours">FA-RDP (Ours) ✓</div>
-        </div></div>
-        <div class="column is-3"><div class="video-card">
-          <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/box_mcd_success.mp4" type="video/mp4"></video>
-          <div class="video-label ours">MCD alone ✓</div>
-        </div></div>
-        <div class="column is-3"><div class="video-card">
-          <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/box_dp_failure.mp4" type="video/mp4"></video>
-          <div class="video-label">DP ✗</div>
-        </div></div>
-        <div class="column is-3"><div class="video-card">
-          <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/box_rdp_failure.mp4" type="video/mp4"></video>
-          <div class="video-label">RDP ✗</div>
-        </div></div>
-        <div class="column is-3"><div class="video-card">
-          <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/box_implicitrdp_failure.mp4" type="video/mp4"></video>
-          <div class="video-label">ImplicitRDP ✗</div>
-        </div></div>
-        <div class="column is-3"><div class="video-card">
-          <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/box_high_alone_failure.mp4" type="video/mp4"></video>
-          <div class="video-label">High-Freq Alone ✗</div>
-        </div></div>
-        <div class="column is-3"><div class="video-card">
-          <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/box_meanflows_failure.mp4" type="video/mp4"></video>
-          <div class="video-label">MeanFlow ✗</div>
-        </div></div>
-        <div class="column is-3"><div class="video-card">
-          <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/box_consistency_failure.mp4" type="video/mp4"></video>
-          <div class="video-label">Consistency ✗</div>
-        </div></div>
+    <!-- Per-task videos: baselines -->
+    <div class="tabgroup">
+      <div class="tab-buttons">
+        <button class="button is-active" data-tab="box">
+          <span class="icon"><i class="fas fa-box"></i></span><span>Box Flipping</span>
+        </button>
+        <button class="button" data-tab="switch">
+          <span class="icon"><i class="fas fa-toggle-on"></i></span><span>Switch Toggling</span>
+        </button>
+        <button class="button" data-tab="button">
+          <span class="icon"><i class="fas fa-dot-circle"></i></span><span>Button Pressing</span>
+        </button>
       </div>
-    </div>
 
-    <!-- SWITCH -->
-    <div class="tab-pane" id="tab-switch">
-      <div class="columns is-multiline">
-        <div class="column is-3"><div class="video-card">
-          <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/switch_ours_success.mp4" type="video/mp4"></video>
-          <div class="video-label ours">FA-RDP (Ours) ✓</div>
-        </div></div>
-        <div class="column is-3"><div class="video-card">
-          <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/switch_mcd_success.mp4" type="video/mp4"></video>
-          <div class="video-label ours">MCD alone ✓</div>
-        </div></div>
-        <div class="column is-3"><div class="video-card">
-          <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/switch_dp_failure.mp4" type="video/mp4"></video>
-          <div class="video-label">DP ✗</div>
-        </div></div>
-        <div class="column is-3"><div class="video-card">
-          <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/switch_rdp_failure.mp4" type="video/mp4"></video>
-          <div class="video-label">RDP ✗</div>
-        </div></div>
-        <div class="column is-3"><div class="video-card">
-          <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/switch_implicitrdp_failure.mp4" type="video/mp4"></video>
-          <div class="video-label">ImplicitRDP ✗</div>
-        </div></div>
-        <div class="column is-3"><div class="video-card">
-          <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/switch_highfrequency_failure.mp4" type="video/mp4"></video>
-          <div class="video-label">High-Freq Alone ✗</div>
-        </div></div>
-        <div class="column is-3"><div class="video-card">
-          <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/switch_meanflows_failure.mp4" type="video/mp4"></video>
-          <div class="video-label">MeanFlow ✗</div>
-        </div></div>
-        <div class="column is-3"><div class="video-card">
-          <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/switch_consistency_failure.mp4" type="video/mp4"></video>
-          <div class="video-label">Consistency ✗</div>
-        </div></div>
+      <!-- BOX -->
+      <div class="tab-pane is-active" data-pane="box">
+        <div class="columns is-multiline">
+          <div class="column is-3"><div class="video-card">
+            <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/box_ours_success.mp4" type="video/mp4"></video>
+            <div class="video-label ours">FA-RDP (Ours) ✓</div>
+          </div></div>
+          <div class="column is-3"><div class="video-card">
+            <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/box_dp_failure.mp4" type="video/mp4"></video>
+            <div class="video-label">DP ✗</div>
+          </div></div>
+          <div class="column is-3"><div class="video-card">
+            <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/box_rdp_failure.mp4" type="video/mp4"></video>
+            <div class="video-label">RDP ✗</div>
+          </div></div>
+          <div class="column is-3"><div class="video-card">
+            <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/box_implicitrdp_failure.mp4" type="video/mp4"></video>
+            <div class="video-label">ImplicitRDP ✗</div>
+          </div></div>
+        </div>
+        <p class="fig-caption" style="max-width:820px;margin:0.4rem auto 0;">FA-RDP keeps contact and flips the box; the baselines lose contact or push the wrong region.</p>
       </div>
-    </div>
 
-    <!-- BUTTON -->
-    <div class="tab-pane" id="tab-button">
-      <div class="columns is-multiline">
-        <div class="column is-3"><div class="video-card">
-          <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/button_ours_success.mp4" type="video/mp4"></video>
-          <div class="video-label ours">FA-RDP (Ours) ✓</div>
-        </div></div>
-        <div class="column is-3"><div class="video-card">
-          <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/button_mcd_success.mp4" type="video/mp4"></video>
-          <div class="video-label ours">MCD alone ✓</div>
-        </div></div>
-        <div class="column is-3"><div class="video-card">
-          <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/button_dp_failure.mp4" type="video/mp4"></video>
-          <div class="video-label">DP ✗</div>
-        </div></div>
-        <div class="column is-3"><div class="video-card">
-          <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/button_rdp_failure.mp4" type="video/mp4"></video>
-          <div class="video-label">RDP ✗</div>
-        </div></div>
-        <div class="column is-3"><div class="video-card">
-          <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/button_implicitrdp_failure.mp4" type="video/mp4"></video>
-          <div class="video-label">ImplicitRDP ✗</div>
-        </div></div>
-        <div class="column is-3"><div class="video-card">
-          <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/button_highfrequency_failure.mp4" type="video/mp4"></video>
-          <div class="video-label">High-Freq Alone ✗</div>
-        </div></div>
-        <div class="column is-3"><div class="video-card">
-          <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/button_meanflows_failure.mp4" type="video/mp4"></video>
-          <div class="video-label">MeanFlow ✗</div>
-        </div></div>
-        <div class="column is-3"><div class="video-card">
-          <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/button_consistency_failure.mp4" type="video/mp4"></video>
-          <div class="video-label">Consistency ✗</div>
-        </div></div>
+      <!-- SWITCH -->
+      <div class="tab-pane" data-pane="switch">
+        <div class="columns is-multiline">
+          <div class="column is-3"><div class="video-card">
+            <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/switch_ours_success.mp4" type="video/mp4"></video>
+            <div class="video-label ours">FA-RDP (Ours) ✓</div>
+          </div></div>
+          <div class="column is-3"><div class="video-card">
+            <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/switch_dp_failure.mp4" type="video/mp4"></video>
+            <div class="video-label">DP ✗</div>
+          </div></div>
+          <div class="column is-3"><div class="video-card">
+            <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/switch_rdp_failure.mp4" type="video/mp4"></video>
+            <div class="video-label">RDP ✗</div>
+          </div></div>
+          <div class="column is-3"><div class="video-card">
+            <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/switch_implicitrdp_failure.mp4" type="video/mp4"></video>
+            <div class="video-label">ImplicitRDP ✗</div>
+          </div></div>
+        </div>
+        <p class="fig-caption" style="max-width:820px;margin:0.4rem auto 0;">FA-RDP keeps contact and toggles the switch; the baselines lose contact or hit the wrong region.</p>
+      </div>
+
+      <!-- BUTTON -->
+      <div class="tab-pane" data-pane="button">
+        <div class="columns is-multiline">
+          <div class="column is-3"><div class="video-card">
+            <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/button_ours_success.mp4" type="video/mp4"></video>
+            <div class="video-label ours">FA-RDP (Ours) ✓</div>
+          </div></div>
+          <div class="column is-3"><div class="video-card">
+            <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/button_dp_failure.mp4" type="video/mp4"></video>
+            <div class="video-label">DP ✗</div>
+          </div></div>
+          <div class="column is-3"><div class="video-card">
+            <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/button_rdp_failure.mp4" type="video/mp4"></video>
+            <div class="video-label">RDP ✗</div>
+          </div></div>
+          <div class="column is-3"><div class="video-card">
+            <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/button_implicitrdp_failure.mp4" type="video/mp4"></video>
+            <div class="video-label">ImplicitRDP ✗</div>
+          </div></div>
+        </div>
+        <p class="fig-caption" style="max-width:820px;margin:0.4rem auto 0;">FA-RDP keeps contact and presses the button; the baselines lose contact or hit the wrong region.</p>
       </div>
     </div>
 
@@ -603,12 +535,12 @@
       <div class="columns is-centered" style="margin-bottom:1.5rem;">
         <div class="column is-8">
           <img src="figs/multimodal_preservation/pillows-1.png" style="width:100%;border-radius:8px;" alt="Multimodal Preservation">
-          <p class="fig-caption">FA-RDP and ImplicitRDP cover all four pre-contact modes; the high-frequency distilled alone policy collapses to one dominant mode.</p>
+          <p class="fig-caption">FA-RDP covers all four approach modes; the high-frequency-only policy collapses to one.</p>
         </div>
       </div>
 
       <p style="margin-bottom:1rem;color:#444;">
-        Box Flipping — four valid pre-contact approach trajectories recovered by FA-RDP:
+        The four valid approach trajectories FA-RDP recovers before contact on Box Flipping:
       </p>
       <div class="multimodal-grid">
         <div class="video-card">
@@ -643,7 +575,7 @@
       <div class="column is-8">
         <img src="figs/confidence_force_curve/confidence_force_curve-1.png" style="width:100%;border-radius:8px;" alt="Confidence and Force Curves">
         <p class="fig-caption">
-          The indicator value stays low before contact (multiple collision-free approaches remain valid → low-frequency sampler active), then rises with the force response after contact (solution space narrows → high-frequency distilled sampler selected). Indicator-guided switching improves average success from 61.7% to 81.7%.
+          The indicator stays low before contact and rises after contact, triggering the switch from low- to high-frequency sampling. Switching lifts average success from 61.7% to 81.7%.
         </p>
       </div>
     </div>
@@ -658,10 +590,9 @@
   <div class="container">
     <h2 class="section-heading">Q4 · Distillation Method Comparison</h2>
     <p style="color:#444;max-width:820px;margin-bottom:1.5rem;">
-      Q4 evaluates whether Manifold Consistency Distillation (MCD) yields better one-step high-frequency prediction than
-      alternative distillation objectives. All methods use the high-frequency mode with multimodality-based selection disabled.
-      The <em>high-frequency alone policy</em> is the original multi-step policy run with one-step sampling (no distillation),
-      while the other rows apply different one-step distillation objectives.
+      Does MCD give better one-step high-frequency prediction than other distillation objectives? All methods run in
+      high-frequency mode with frequency selection off. The high-frequency-alone policy is the multi-step policy run
+      one-step with no distillation; the others apply different one-step distillation objectives.
     </p>
     <div class="table-wrap">
       <table class="results-table">
@@ -694,11 +625,93 @@
         </tbody>
       </table>
     </div>
-    <p class="table-note">
-      Running the original multi-step high-frequency policy with one-step sampling degrades accuracy, and MeanFlow / Consistency
-      distillation nearly collapse (1.7%). MCD with SRL regularization reaches 61.7%, confirming the effectiveness of manifold
-      consistency distillation for one-step high-frequency control.
+    <p class="table-note" style="margin-bottom:2rem;">
+      One-step sampling without distillation drops accuracy, and MeanFlow / Consistency nearly collapse (1.7%). MCD reaches 61.7%.
     </p>
+
+    <!-- Per-task videos: distillation -->
+    <div class="tabgroup">
+      <div class="tab-buttons">
+        <button class="button is-active" data-tab="box">
+          <span class="icon"><i class="fas fa-box"></i></span><span>Box Flipping</span>
+        </button>
+        <button class="button" data-tab="switch">
+          <span class="icon"><i class="fas fa-toggle-on"></i></span><span>Switch Toggling</span>
+        </button>
+        <button class="button" data-tab="button">
+          <span class="icon"><i class="fas fa-dot-circle"></i></span><span>Button Pressing</span>
+        </button>
+      </div>
+
+      <!-- BOX -->
+      <div class="tab-pane is-active" data-pane="box">
+        <div class="columns is-multiline">
+          <div class="column is-3"><div class="video-card">
+            <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/box_mcd_success.mp4" type="video/mp4"></video>
+            <div class="video-label ours">MCD (Ours) ✓</div>
+          </div></div>
+          <div class="column is-3"><div class="video-card">
+            <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/box_high_alone_failure.mp4" type="video/mp4"></video>
+            <div class="video-label">High-Freq Alone ✗</div>
+          </div></div>
+          <div class="column is-3"><div class="video-card">
+            <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/box_meanflows_failure.mp4" type="video/mp4"></video>
+            <div class="video-label">MeanFlow ✗</div>
+          </div></div>
+          <div class="column is-3"><div class="video-card">
+            <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/box_consistency_failure.mp4" type="video/mp4"></video>
+            <div class="video-label">Consistency ✗</div>
+          </div></div>
+        </div>
+        <p class="fig-caption" style="max-width:820px;margin:0.4rem auto 0;">Only MCD produces smooth one-step actions that flip the box; the others stall or diverge.</p>
+      </div>
+
+      <!-- SWITCH -->
+      <div class="tab-pane" data-pane="switch">
+        <div class="columns is-multiline">
+          <div class="column is-3"><div class="video-card">
+            <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/switch_mcd_success.mp4" type="video/mp4"></video>
+            <div class="video-label ours">MCD (Ours) ✓</div>
+          </div></div>
+          <div class="column is-3"><div class="video-card">
+            <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/switch_highfrequency_failure.mp4" type="video/mp4"></video>
+            <div class="video-label">High-Freq Alone ✗</div>
+          </div></div>
+          <div class="column is-3"><div class="video-card">
+            <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/switch_meanflows_failure.mp4" type="video/mp4"></video>
+            <div class="video-label">MeanFlow ✗</div>
+          </div></div>
+          <div class="column is-3"><div class="video-card">
+            <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/switch_consistency_failure.mp4" type="video/mp4"></video>
+            <div class="video-label">Consistency ✗</div>
+          </div></div>
+        </div>
+        <p class="fig-caption" style="max-width:820px;margin:0.4rem auto 0;">Only MCD produces smooth one-step actions that toggle the switch; the others stall or diverge.</p>
+      </div>
+
+      <!-- BUTTON -->
+      <div class="tab-pane" data-pane="button">
+        <div class="columns is-multiline">
+          <div class="column is-3"><div class="video-card">
+            <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/button_mcd_success.mp4" type="video/mp4"></video>
+            <div class="video-label ours">MCD (Ours) ✓</div>
+          </div></div>
+          <div class="column is-3"><div class="video-card">
+            <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/button_highfrequency_failure.mp4" type="video/mp4"></video>
+            <div class="video-label">High-Freq Alone ✗</div>
+          </div></div>
+          <div class="column is-3"><div class="video-card">
+            <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/button_meanflows_failure.mp4" type="video/mp4"></video>
+            <div class="video-label">MeanFlow ✗</div>
+          </div></div>
+          <div class="column is-3"><div class="video-card">
+            <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/button_consistency_failure.mp4" type="video/mp4"></video>
+            <div class="video-label">Consistency ✗</div>
+          </div></div>
+        </div>
+        <p class="fig-caption" style="max-width:820px;margin:0.4rem auto 0;">Only MCD produces smooth one-step actions that press the button; the others stall or diverge.</p>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -721,17 +734,19 @@
 
 
 <script>
-  // Tab switching
+  // Tab switching — scoped per .tabgroup so multiple groups work independently
   (function () {
-    var btns  = document.querySelectorAll('#task-tabs .button');
-    var panes = document.querySelectorAll('.tab-pane');
-    btns.forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var t = this.getAttribute('data-tab');
-        btns.forEach(function (b) { b.classList.remove('is-active'); });
-        panes.forEach(function (p) { p.classList.remove('is-active'); });
-        this.classList.add('is-active');
-        document.getElementById('tab-' + t).classList.add('is-active');
+    document.querySelectorAll('.tabgroup').forEach(function (group) {
+      var btns  = group.querySelectorAll('.tab-buttons .button');
+      var panes = group.querySelectorAll('.tab-pane');
+      btns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var t = btn.getAttribute('data-tab');
+          btns.forEach(function (b) { b.classList.remove('is-active'); });
+          panes.forEach(function (p) { p.classList.remove('is-active'); });
+          btn.classList.add('is-active');
+          group.querySelector('[data-pane="' + t + '"]').classList.add('is-active');
+        });
       });
     });
   })();
