@@ -134,6 +134,28 @@
     }
     .video-label.ours { background: #e8eaf6; color: var(--navy); }
 
+    /* Horizontal video slider */
+    .video-slider {
+      display: flex;
+      gap: 1rem;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      padding: 0.25rem 0.25rem 0.75rem;
+      -webkit-overflow-scrolling: touch;
+    }
+    .video-slider .slide {
+      flex: 0 0 calc((100% - 3rem) / 4);
+      min-width: 190px;
+      scroll-snap-align: start;
+    }
+    .video-slider .slide .video-card { height: 100%; }
+    /* Scrollbar styling */
+    .video-slider::-webkit-scrollbar { height: 8px; }
+    .video-slider::-webkit-scrollbar-thumb { background: #c5cae9; border-radius: 4px; }
+    .video-slider::-webkit-scrollbar-thumb:hover { background: var(--navy); }
+    .video-slider::-webkit-scrollbar-track { background: #f0f0f5; border-radius: 4px; }
+    .slider-hint { font-size: 0.8rem; color: #9aa; text-align: right; margin: 0 0.25rem 0.4rem; }
+
     /* Tabs */
     .tab-buttons { margin-bottom: 1.5rem; }
     .tab-buttons .button {
@@ -400,10 +422,9 @@
 
     <!-- Setup -->
     <h3 class="subsection-heading">Experimental Setup</h3>
-    <div style="max-width:680px;margin:0 auto 2rem;">
-      <img src="figs/experimental_setup/setup-1.png" style="width:100%;border-radius:8px;" alt="Experimental Setup">
-      <p class="fig-caption">Flexiv Rizon 4s arm with wrist and third-view cameras. Three contact-rich tasks: box flipping, switch toggling, button pressing.</p>
-    </div>
+    <p style="color:#444;max-width:820px;margin:0 auto 2rem;">
+      A Flexiv Rizon 4s arm with wrist and third-view cameras, evaluated on three contact-rich tasks: box flipping, switch toggling, and button pressing.
+    </p>
 
     <!-- Main results -->
     <h3 class="subsection-heading">Q1 · Comparison with Baselines</h3>
@@ -467,24 +488,25 @@
 
       <!-- BOX -->
       <div class="tab-pane is-active" data-pane="box">
-        <div class="columns is-multiline">
-          <div class="column is-3"><div class="video-card">
+        <p class="slider-hint"><i class="fas fa-arrows-left-right"></i> slide for more &rarr;</p>
+        <div class="video-slider">
+          <div class="slide"><div class="video-card">
             <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/box_ours_success.mp4" type="video/mp4"></video>
             <div class="video-label ours">FA-RDP (Ours) ✓</div>
           </div></div>
-          <div class="column is-3"><div class="video-card">
+          <div class="slide"><div class="video-card">
             <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/box_dp_failure.mp4" type="video/mp4"></video>
             <div class="video-label">DP ✗</div>
           </div></div>
-          <div class="column is-3"><div class="video-card">
+          <div class="slide"><div class="video-card">
             <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/box_rdp_failure.mp4" type="video/mp4"></video>
             <div class="video-label">RDP ✗</div>
           </div></div>
-          <div class="column is-3"><div class="video-card">
+          <div class="slide"><div class="video-card">
             <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/box_implicitrdp_failure.mp4" type="video/mp4"></video>
             <div class="video-label">ImplicitRDP ✗</div>
           </div></div>
-          <div class="column is-3"><div class="video-card">
+          <div class="slide"><div class="video-card">
             <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/box_meanflows_failure.mp4" type="video/mp4"></video>
             <div class="video-label">Regression Policy w/ Force ✗</div>
           </div></div>
@@ -494,24 +516,25 @@
 
       <!-- SWITCH -->
       <div class="tab-pane" data-pane="switch">
-        <div class="columns is-multiline">
-          <div class="column is-3"><div class="video-card">
+        <p class="slider-hint"><i class="fas fa-arrows-left-right"></i> slide for more &rarr;</p>
+        <div class="video-slider">
+          <div class="slide"><div class="video-card">
             <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/switch_ours_success.mp4" type="video/mp4"></video>
             <div class="video-label ours">FA-RDP (Ours) ✓</div>
           </div></div>
-          <div class="column is-3"><div class="video-card">
+          <div class="slide"><div class="video-card">
             <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/switch_dp_failure.mp4" type="video/mp4"></video>
             <div class="video-label">DP ✗</div>
           </div></div>
-          <div class="column is-3"><div class="video-card">
+          <div class="slide"><div class="video-card">
             <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/switch_rdp_failure.mp4" type="video/mp4"></video>
             <div class="video-label">RDP ✗</div>
           </div></div>
-          <div class="column is-3"><div class="video-card">
+          <div class="slide"><div class="video-card">
             <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/switch_implicitrdp_failure.mp4" type="video/mp4"></video>
             <div class="video-label">ImplicitRDP ✗</div>
           </div></div>
-          <div class="column is-3"><div class="video-card">
+          <div class="slide"><div class="video-card">
             <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/switch_meanflows_failure.mp4" type="video/mp4"></video>
             <div class="video-label">Regression Policy w/ Force ✗</div>
           </div></div>
@@ -521,24 +544,25 @@
 
       <!-- BUTTON -->
       <div class="tab-pane" data-pane="button">
-        <div class="columns is-multiline">
-          <div class="column is-3"><div class="video-card">
+        <p class="slider-hint"><i class="fas fa-arrows-left-right"></i> slide for more &rarr;</p>
+        <div class="video-slider">
+          <div class="slide"><div class="video-card">
             <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/button_ours_success.mp4" type="video/mp4"></video>
             <div class="video-label ours">FA-RDP (Ours) ✓</div>
           </div></div>
-          <div class="column is-3"><div class="video-card">
+          <div class="slide"><div class="video-card">
             <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/button_dp_failure.mp4" type="video/mp4"></video>
             <div class="video-label">DP ✗</div>
           </div></div>
-          <div class="column is-3"><div class="video-card">
+          <div class="slide"><div class="video-card">
             <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/button_rdp_failure.mp4" type="video/mp4"></video>
             <div class="video-label">RDP ✗</div>
           </div></div>
-          <div class="column is-3"><div class="video-card">
+          <div class="slide"><div class="video-card">
             <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/button_implicitrdp_failure.mp4" type="video/mp4"></video>
             <div class="video-label">ImplicitRDP ✗</div>
           </div></div>
-          <div class="column is-3"><div class="video-card">
+          <div class="slide"><div class="video-card">
             <video autoplay muted loop playsinline controls><source src="https://github.com/zhuolifeng/FA-RDP/releases/download/v1.0/button_meanflows_failure.mp4" type="video/mp4"></video>
             <div class="video-label">Regression Policy w/ Force ✗</div>
           </div></div>
